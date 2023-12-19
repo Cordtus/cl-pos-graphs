@@ -1,9 +1,8 @@
 # cl-pos-graphs
 Graphing user positions for Osmosis CL pools
 
+## Install dependencies
+`pip3 install -r requirements.txt`
 
-## Grab pool position data
-`osmosisd q concentratedliquidity liquidity-per-tick-range <poolid> -o json > <poolid>.json`
-
-## Generate graph from data
-`python3 graph-3d.py ./data/<poolid>.json ./data/graphs/<poolid>.png`
+## Generate graph from pool id
+`python3 graph-3d.py <pool-id> <output-path>` 
