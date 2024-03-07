@@ -3,15 +3,19 @@ import time
 import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import os
 
-url = "https://osmosis-api.lavenderfive.com:443"
+# Default URL is defined here; it can be overridden by user input.
+default_url = "https://osmosis-api.lavenderfive.com:443"
+
 query_path = "/osmosis/concentratedliquidity/v1beta1/liquidity_per_tick_range"
 
 def read_data_from_api(url, pool_id, block_height=None):
-    headers = {}
+    headers = {"Content-Type": "application/json"}
     if block_height is not None:
-        headers['Block-Height'] = str(block_height)
-    data = requests.get(url + query_path, params={"pool_id": pool_id}, headers=headers).json()
+        headers['x-cosmos-block-height'] = str(block_height)
+    response = requests.get(url + query_path, params={"pool_id": pool_id}, headers=headers)
+    data = response.json()
     return data
 
 def preprocess_data(data):
@@ -38,16 +42,26 @@ def plot_3d_liquidity(df, output_file):
     plt.close()
 
 if __name__ == "__main__":
+    node_url = input(f"Enter the node URL (default {default_url}): ")
+    if not node_url:
+        node_url = default_url
+
     pool_id = input("Enter the pool ID: ")
     block_height = input("Enter the block height (optional, press Enter to skip): ")
-    output_path = input("Enter the directory path to save the output file: ")
-    # Verify input or set defaults if necessary
     block_height = None if block_height == '' else block_height
+
+    output_path = input("Enter the directory path to save the output file (default ./data): ")
+    output_path = output_path if output_path != '' else "./data"
+    
+    # Ensure the directory exists
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
     try:
-        data = read_data_from_api(url, pool_id, block_height)
+        data = read_data_from_api(node_url, pool_id, block_height)
         df = preprocess_data(data)
         output_file_name = f"pool_{pool_id}_{time.strftime('%Y%m%d-%H%M%S')}.png"
-        output_file_path = f"{output_path}/{output_file_name}"
+        output_file_path = os.path.join(output_path, output_file_name)
         plot_3d_liquidity(df, output_file_path)
         print(f"Plot saved to {output_file_path}")
     except Exception as e:
