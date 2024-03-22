@@ -5,6 +5,6 @@ Graphing user positions for Osmosis CL pools
 `pip3 install -r requirements.txt`
 
 ## Generate graph from pool id
-`python3 graph.py` 
+`python3 graph-interactive.py` 
 
 ## follow interactive prompts
