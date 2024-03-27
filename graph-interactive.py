@@ -6,9 +6,11 @@ from mpl_toolkits.mplot3d import Axes3D
 import os
 import argparse
 
+# Constants
 default_url = "https://osmosis-api.lavenderfive.com:443"
 query_path = "/osmosis/concentratedliquidity/v1beta1/liquidity_per_tick_range"
 
+# Function Definitions
 def read_data_from_api(url, pool_id, block_height=None):
     headers = {"Content-Type": "application/json"}
     if block_height is not None:
@@ -47,26 +49,40 @@ def plot_3d_liquidity(df, output_file, dot_size):
     plt.savefig(output_file)
     plt.close()
 
+# Main Execution Block
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a 3D scatter plot and/or CSV from pool data.")
-    parser.add_argument('pool_id', type=str, help='Pool ID')
-    parser.add_argument('--block_height', type=str, default=None, help='Block height (optional, press Enter to skip)')
-    parser.add_argument('--csv', type=str, default='no', choices=['yes', 'no', 'exclusively'], help='Output a CSV file in addition to the plot')
+    parser.add_argument('--pool_id', type=str, help='Pool ID (optional, for interactive mode leave blank)')
+    parser.add_argument('--block_height', type=str, help='Block height (optional, press Enter to skip)')
+    parser.add_argument('--csv', choices=['yes', 'no', 'exclusively'], help='Output a CSV file in addition to the plot')
     parser.add_argument('--dot_size', type=int, default=50, help='Size of the dots in the plot, ranging from 1 to 100. Default is 50')
     parser.add_argument('--url', type=str, default=default_url, help='Node REST URL')
 
     args = parser.parse_args()
 
-    output_path = './data'  # Default output path
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-
+    # Check if Pool ID is provided, else switch to interactive mode
+    if args.pool_id is None:
+        args.pool_id = input("Enter the Pool ID: ")
+    
+    # Process data
     try:
         data = read_data_from_api(args.url, args.pool_id, args.block_height)
         df = preprocess_data(data)
         
+        # Interactive mode for missing arguments
+        if args.block_height is None:
+            args.block_height = input("Enter the Block Height (optional, press Enter to skip): ")
+        if args.csv is None:
+            args.csv = input("Output a CSV file in addition to the plot? (yes/no/exclusively): ").lower()
+        if args.dot_size is None:
+            args.dot_size = int(input("Enter the size of the dots in the plot, ranging from 1 to 100 (default is 50): "))
+        
+        output_path = './data'
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
         output_file_base = f"pool_{args.pool_id}_{time.strftime('%Y%m%d-%H%M%S')}"
-        if args.csv == 'yes' or args.csv == 'exclusively':
+        if args.csv in ['yes', 'exclusively']:
             export_to_csv(df, output_path, args.pool_id)
 
         if args.csv != 'exclusively':
@@ -74,5 +90,6 @@ if __name__ == "__main__":
             output_file_path = os.path.join(output_path, output_file_name)
             plot_3d_liquidity(df, output_file_path, args.dot_size)
             print(f"Plot saved to {output_file_path}")
+
     except Exception as e:
         print(f"An error occurred: {e}")
