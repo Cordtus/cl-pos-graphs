@@ -7,7 +7,7 @@ import os
 import argparse
 
 # Constants
-default_url = "https://osmosis-api.lavenderfive.com:443"
+default_url = "https://rest-osmosis.ecostake.com:443"
 query_path = "/osmosis/concentratedliquidity/v1beta1/liquidity_per_tick_range"
 
 # Function Definitions
