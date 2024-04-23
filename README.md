@@ -9,7 +9,14 @@ Option to export chart image [`png` format] and/or `CSV` file to `./data/` in th
 Optional block height [leave blank for default - latest height]
 
 
-If it doesn't seem to work, try changing the REST/LCD URL at the top of the script.
+If you have issues like HTTP errors, try changing the node the script uses. There is a REST/LCD URL at the top of the script you can change for another endpoint.
+See `[https://cosmos.directory/osmosis/nodes]` for other public nodes
+
+```
+# Constants
+default_url = "https://rest-osmosis.ecostake.com:443"
+```
+
 See [`https://cosmos.directory/osmosis/nodes`] for other public nodes
 
 ---
