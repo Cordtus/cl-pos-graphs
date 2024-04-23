@@ -11,6 +11,9 @@ def install_dependencies(requirements_path='requirements.txt'):
 # Call the function at the start of your script execution
 install_dependencies()
 
+import hashlib
+import json
+import pickle
 import requests
 import time
 import pandas as pd
@@ -96,48 +99,99 @@ def plot_3d_liquidity(df, output_file, dot_size, block_height):
     plt.savefig(output_file)
     plt.close()
 
+# select range of heights
+def process_heights(heights_arg):
+    if '-' in heights_arg:  # It's a range
+        start, end = map(int, heights_arg.split('-'))
+        return list(range(start, end + 1))
+    elif ',' in heights_arg:  # It's a list
+        return list(map(int, heights_arg.split(',')))
+    elif heights_arg:  # It's a single height
+        return [int(heights_arg)]
+    else:
+        return []  # No heights specified
+
+# Function to compute a hash for the data
+def compute_hash(data):
+    data_string = json.dumps(data, sort_keys=True)
+    data_hash = hashlib.sha256(data_string.encode('utf-8')).hexdigest()
+    return data_hash
+
+# Dictionary to store the last hash for a given pool_id
+last_hashes = {}
+
+# Function to load and save the last hash for persistence across script runs
+def save_hashes(hashes, filename='last_hashes.pkl'):
+    with open(filename, 'wb') as f:
+        pickle.dump(hashes, f)
+
+def load_hashes(filename='last_hashes.pkl'):
+    try:
+        with open(filename, 'rb') as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        return {}
 
 # Main Execution Block
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a 3D scatter plot and/or CSV from pool data.")
-    parser.add_argument('--pool_id', type=str, help='Pool ID (optional, for interactive mode leave blank)')
-    parser.add_argument('--block_height', type=str, help='Block height (optional, press Enter to skip)')
-    parser.add_argument('--csv', choices=['yes', 'no', 'exclusively'], help='Output a CSV file in addition to the plot')
-    parser.add_argument('--dot_size', type=int, default=50, help='Size of the dots in the plot, ranging from 1 to 100. Default is 50')
-    parser.add_argument('--url', type=str, default=default_url, help='Node REST URL')
+    parser.add_argument('--pool_id', type=str, required=True, help='Pool ID.')
+    parser.add_argument('--heights', type=str, default='', help='Range of heights (e.g., 1000-1200) or specific heights (e.g., 1000,1005,1249).')
+    parser.add_argument('--csv', choices=['yes', 'no', 'exclusively'], default='yes', help='Output a CSV file in addition to the plot.')
+    parser.add_argument('--dot_size', type=int, default=30, help='Size of the dots in the plot, ranging from 1 to 100. Default is 30.')
+    parser.add_argument('--url', type=str, default=default_url, help='Node REST URL.')
 
     args = parser.parse_args()
 
-    # Check if Pool ID is provided, else switch to interactive mode
-    if args.pool_id is None:
-        args.pool_id = input("Enter the Pool ID: ")
-    
-    # Process data
-    try:
-        data = read_data_from_api(args.url, args.pool_id, args.block_height)
-        df = preprocess_data(data)
-        
-        # Interactive mode for missing arguments
-        if args.block_height is None:
-            args.block_height = input("Enter the Block Height (optional, press Enter to skip): ")
-        if args.csv is None:
-            args.csv = input("Output a CSV file in addition to the plot? (yes/no/exclusively): ").lower()
-        if args.dot_size is None:
-            args.dot_size = int(input("Enter the size of the dots in the plot, ranging from 1 to 100 (default is 50): "))
-        
-        output_path = './data'
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
+    # Load last hashes or initialize if not found
+    last_hashes = load_hashes()
 
-        output_file_base = f"pool_{args.pool_id}_{time.strftime('%Y%m%d-%H%M%S')}"
-        if args.csv in ['yes', 'exclusively']:
-            export_to_csv(df, output_path, args.pool_id)
+    # Ensure the data directory exists
+    output_path = './data'
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
-        if args.csv != 'exclusively':
-            output_file_name = f"{output_file_base}.png"
-            output_file_path = os.path.join(output_path, output_file_name)
-            plot_3d_liquidity(df, output_file_path, args.dot_size, args.block_height)  # Include block height here
-            print(f"Plot saved to {output_file_path}")
+    # Process a range of heights or specific heights
+    heights_to_check = process_heights(args.heights) or [None]  # Use None as a placeholder for interactive mode if no heights provided
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    # Iterate over each specified block height
+    for block_height in heights_to_check:
+        if block_height is None:  # Interactive mode if no height is provided
+            block_height = input("Enter the Block Height (optional, press Enter to skip): ")
+            if block_height:
+                block_height = int(block_height)
+            else:
+                continue  # If no height is entered, skip the iteration
+
+        try:
+            # Fetch and process the data
+            data = read_data_from_api(args.url, args.pool_id, block_height)
+            data_hash = compute_hash(data)
+
+            # Check if the data is identical to the last run
+            if args.pool_id in last_hashes and last_hashes[args.pool_id] == data_hash:
+                print(f"No changes in data for pool ID {args.pool_id} at block height {block_height}.")
+                continue  # Skip to the next height
+
+            # If the data is new or has changed, process it and update the hash
+            last_hashes[args.pool_id] = data_hash
+            df = preprocess_data(data)
+
+            # Determine file names and paths
+            timestamp = time.strftime('%Y%m%d-%H%M%S')
+            output_file_base = f"pool_{args.pool_id}_height_{block_height}_{timestamp}"
+            if args.csv in ['yes', 'exclusively']:
+                export_to_csv(df, output_path, output_file_base)
+
+            if args.csv != 'exclusively':
+                output_file_name = f"{output_file_base}.png"
+                output_file_path = os.path.join(output_path, output_file_name)
+                plot_3d_liquidity(df, output_file_path, args.dot_size, block_height)
+                print(f"Plot saved to {output_file_path}")
+
+        except Exception as e:
+            print(f"An error occurred at block height {block_height}: {e}")
+            continue  # Continue to the next height
+
+    # Save updated hashes after all operations
+    save_hashes(last_hashes)
