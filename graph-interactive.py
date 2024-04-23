@@ -1,3 +1,16 @@
+import subprocess
+import sys
+
+def install_dependencies(requirements_path='requirements.txt'):
+    try:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', requirements_path])
+        print("All dependencies installed successfully.")
+    except subprocess.CalledProcessError:
+        print("Failed to install dependencies. Ensure you have the necessary permissions.")
+
+# Call the function at the start of your script execution
+install_dependencies()
+
 import requests
 import time
 import pandas as pd
@@ -34,9 +47,15 @@ def export_to_csv(df, output_path, pool_id):
     df.to_csv(csv_file_path, index=False)
     print(f"Data exported to CSV file at {csv_file_path}")
 
-def plot_3d_liquidity(df, output_file, dot_size):
-    fig = plt.figure(figsize=(12, 8))
+def plot_3d_liquidity(df, output_file, dot_size, block_height):
+    fig = plt.figure(figsize=(14, 8))  # Slightly larger to accommodate the table
     ax = fig.add_subplot(111, projection='3d')
+
+    # Customize the title to include block height
+    title = f'Liquidity Amount Per Tick Range\nHeight: {block_height}'
+    ax.set_title(title)
+
+    # Plot the 3D scatter
     focus_df = df[(df['liquidity_amount'] < df['liquidity_amount'].quantile(0.99)) &
                   (df['tick_range'] < df['tick_range'].quantile(0.99))]
     img = ax.scatter(focus_df['lower_tick'], focus_df['upper_tick'], focus_df['liquidity_amount'],
@@ -44,10 +63,39 @@ def plot_3d_liquidity(df, output_file, dot_size):
     ax.set_xlabel('Lower Tick Value')
     ax.set_ylabel('Upper Tick Value')
     ax.set_zlabel('Liquidity Amount')
-    ax.set_title('3D Plot of Liquidity Amount vs. Tick Range')
+
+    # Add a color bar for the scatter plot
     fig.colorbar(img, ax=ax, label='Liquidity Amount')
+
+    # Creating an inset axes for the additional details table
+    table_ax = fig.add_axes([0.05, 0.5, 0.2, 0.15])  # Adjust as needed for placement and size of the table
+    table_ax.axis('tight')
+    table_ax.axis('off')
+
+    # Prepare the data for the table
+    table_data = [
+        ['Mean', df['liquidity_amount'].mean()],
+        ['Median', df['liquidity_amount'].median()],
+        ['Std Dev', df['liquidity_amount'].std()],
+        ['Total Count', df['liquidity_amount'].count()]
+    ]
+
+    # Create the table and plot it
+    table = table_ax.table(
+        cellText=table_data,
+        colLabels=['Metric', 'Value'],
+        cellLoc='center',
+        loc='center'
+    )
+
+    table.auto_set_font_size(False)
+    table.set_fontsize(8)
+    table.scale(1, 1.5)
+
+    # Save the plot to a file
     plt.savefig(output_file)
     plt.close()
+
 
 # Main Execution Block
 if __name__ == "__main__":
@@ -88,7 +136,7 @@ if __name__ == "__main__":
         if args.csv != 'exclusively':
             output_file_name = f"{output_file_base}.png"
             output_file_path = os.path.join(output_path, output_file_name)
-            plot_3d_liquidity(df, output_file_path, args.dot_size)
+            plot_3d_liquidity(df, output_file_path, args.dot_size, args.block_height)  # Include block height here
             print(f"Plot saved to {output_file_path}")
 
     except Exception as e:
