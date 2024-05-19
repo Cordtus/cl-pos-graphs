@@ -137,7 +137,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a 3D scatter plot and/or CSV from pool data.")
     parser.add_argument('--pool_id', type=str, help='Pool ID.')
     parser.add_argument('--heights', type=str, default='', help='Range of heights (e.g., 1000-1200) or specific heights (e.g., 1000,1005,1249).')
-    parser.add_argument('--csv', choices=['yes', 'no', 'exclusively'], default='yes', help='Output a CSV file in addition to the plot.')
+    parser.add_argument('--csv', choices=['yes', 'no', 'exclusively'], help='Output a CSV file in addition to the plot.')
     parser.add_argument('--dot_size', type=int, default=30, help='Size of the dots in the plot, ranging from 1 to 100. Default is 30.')
     parser.add_argument('--url', type=str, default=default_url, help='Node REST URL.')
 
@@ -146,6 +146,14 @@ if __name__ == "__main__":
     # Prompt for pool_id if not provided as argument
     if not args.pool_id:
         args.pool_id = input("Enter the Pool ID: ")
+
+    # Prompt for csv option if not provided as argument
+    if not args.csv:
+        csv_choice = input("Do you want to create a CSV file? (yes, no, exclusively): ").strip().lower()
+        if csv_choice not in ['yes', 'no', 'exclusively']:
+            print("Invalid choice. Defaulting to 'yes'.")
+            csv_choice = 'yes'
+        args.csv = csv_choice
 
     # Load last hashes or initialize if not found
     last_hashes = load_hashes()
