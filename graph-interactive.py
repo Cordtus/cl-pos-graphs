@@ -1,6 +1,7 @@
 import subprocess
 import sys
 
+# Function to install dependencies if not already installed
 def install_dependencies(requirements_path='requirements.txt'):
     try:
         import matplotlib
@@ -33,7 +34,7 @@ import argparse
 default_url = "https://rest-osmosis.ecostake.com:443"
 query_path = "/osmosis/concentratedliquidity/v1beta1/liquidity_per_tick_range"
 
-# Function Definitions
+# Function to read data from API
 def read_data_from_api(url, pool_id, block_height=None):
     headers = {"Content-Type": "application/json"}
     if block_height is not None:
@@ -44,6 +45,7 @@ def read_data_from_api(url, pool_id, block_height=None):
     data = response.json()
     return data
 
+# Function to preprocess data
 def preprocess_data(data):
     df = pd.DataFrame(data['liquidity'])
     df['liquidity_amount'] = pd.to_numeric(df['liquidity_amount'])
@@ -52,11 +54,13 @@ def preprocess_data(data):
     df['tick_range'] = df['upper_tick'] - df['lower_tick']
     return df
 
+# Function to export data to CSV
 def export_to_csv(df, output_path, pool_id):
     csv_file_path = f"{output_path}/pool_{pool_id}_{time.strftime('%Y%m%d-%H%M%S')}.csv"
     df.to_csv(csv_file_path, index=False)
     print(f"Data exported to CSV file at {csv_file_path}")
 
+# Function to plot 3D liquidity data
 def plot_3d_liquidity(df, output_file, dot_size, block_height):
     fig = plt.figure(figsize=(14, 8))  # Slightly larger to accommodate the table
     ax = fig.add_subplot(111, projection='3d')
@@ -106,7 +110,7 @@ def plot_3d_liquidity(df, output_file, dot_size, block_height):
     plt.savefig(output_file)
     plt.close()
 
-# select range of heights
+# Function to process range of heights
 def process_heights(heights_arg):
     if '-' in heights_arg:  # It's a range
         start, end = map(int, heights_arg.split('-'))
@@ -183,8 +187,9 @@ if __name__ == "__main__":
                 continue  # If no height is entered, skip the iteration
 
         try:
-            # Fetch and process the data
+            print(f"Fetching data for pool ID {args.pool_id} at block height {block_height}...")  # Debugging print
             data = read_data_from_api(args.url, args.pool_id, block_height)
+            print(f"Data fetched: {data}")  # Debugging print
             data_hash = compute_hash(data)
 
             # Check if the data is identical to the last run
@@ -195,6 +200,7 @@ if __name__ == "__main__":
             # If the data is new or has changed, process it and update the hash
             last_hashes[args.pool_id] = data_hash
             df = preprocess_data(data)
+            print(f"Data preprocessed: {df}")  # Debugging print
 
             # Determine file names and paths
             timestamp = time.strftime('%Y%m%d-%H%M%S')
