@@ -3,10 +3,17 @@ import sys
 
 def install_dependencies(requirements_path='requirements.txt'):
     try:
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', requirements_path])
-        print("All dependencies installed successfully.")
-    except subprocess.CalledProcessError:
-        print("Failed to install dependencies. Ensure you have the necessary permissions.")
+        import matplotlib
+        import pandas
+        import requests
+        # Add any other modules you want to check for here
+        print("All dependencies are already installed.")
+    except ImportError:
+        try:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', requirements_path])
+            print("All dependencies installed successfully.")
+        except subprocess.CalledProcessError:
+            print("Failed to install dependencies. Ensure you have the necessary permissions.")
 
 # Call the function at the start of your script execution
 install_dependencies()
