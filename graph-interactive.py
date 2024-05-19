@@ -40,18 +40,23 @@ def read_data_from_api(url, pool_id, block_height=None):
     if block_height is not None:
         headers['x-cosmos-block-height'] = str(block_height)
     response = requests.get(url + query_path, params={"pool_id": pool_id}, headers=headers)
+    print(f"API response status: {response.status_code}")  # Debugging print
     if response.status_code != 200:
         raise ValueError(f"Error fetching data: HTTP status {response.status_code}")
     data = response.json()
+    print(f"Data received from API: {data}")  # Debugging print
     return data
 
 # Function to preprocess data
 def preprocess_data(data):
+    if 'liquidity' not in data:
+        raise ValueError("Data format error: 'liquidity' key not found in response data")
     df = pd.DataFrame(data['liquidity'])
     df['liquidity_amount'] = pd.to_numeric(df['liquidity_amount'])
     df['lower_tick'] = pd.to_numeric(df['lower_tick'])
     df['upper_tick'] = pd.to_numeric(df['upper_tick'])
     df['tick_range'] = df['upper_tick'] - df['lower_tick']
+    print(f"Dataframe after preprocessing: {df.head()}")  # Debugging print
     return df
 
 # Function to export data to CSV
@@ -109,6 +114,7 @@ def plot_3d_liquidity(df, output_file, dot_size, block_height):
     # Save the plot to a file
     plt.savefig(output_file)
     plt.close()
+    print(f"Plot saved to {output_file}")
 
 # Function to process range of heights
 def process_heights(heights_arg):
@@ -220,3 +226,4 @@ if __name__ == "__main__":
 
     # Save updated hashes after all operations
     save_hashes(last_hashes)
+    print("Hashes updated and saved.")  # Debugging print
