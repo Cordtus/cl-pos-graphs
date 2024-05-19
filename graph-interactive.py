@@ -70,8 +70,8 @@ def plot_3d_liquidity(df, output_file, dot_size, block_height):
     fig = plt.figure(figsize=(14, 8))  # Slightly larger to accommodate the table
     ax = fig.add_subplot(111, projection='3d')
 
-    # Customize the title to include block height
-    title = f'Liquidity Amount Per Tick Range\nHeight: {block_height}'
+    # Customize the title to include block height if provided
+    title = f'Liquidity Amount Per Tick Range\nHeight: {block_height}' if block_height else 'Liquidity Amount Per Tick Range'
     ax.set_title(title)
 
     # Plot the 3D scatter
@@ -190,7 +190,7 @@ if __name__ == "__main__":
             if block_height:
                 block_height = int(block_height)
             else:
-                continue  # If no height is entered, skip the iteration
+                block_height = None  # Reset to None if no height is entered
 
         try:
             print(f"Fetching data for pool ID {args.pool_id} at block height {block_height}...")  # Debugging print
