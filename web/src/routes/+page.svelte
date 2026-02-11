@@ -56,6 +56,43 @@
 		const trace = buildTrace(filtered, dotSize);
 		const layout = buildLayout(blockHeight.trim() || undefined);
 		Plotly.newPlot(chartDiv, [trace], layout, { responsive: true });
+		invertDrag();
+	}
+
+	function invertDrag() {
+		if (!chartDiv) return;
+		const canvas = chartDiv.querySelector('.gl-container canvas');
+		if (!canvas) return;
+
+		let lastX = 0;
+		let lastY = 0;
+		let dragging = false;
+
+		canvas.addEventListener('pointerdown', ((e: PointerEvent) => {
+			lastX = e.clientX;
+			lastY = e.clientY;
+			dragging = true;
+		}) as EventListener);
+
+		window.addEventListener('pointermove', ((e: PointerEvent) => {
+			if (!dragging || !chartDiv || !Plotly) return;
+			const scene = (chartDiv as any)._fullLayout?.scene?._scene;
+			if (!scene?.camera) return;
+
+			const dx = e.clientX - lastX;
+			const dy = e.clientY - lastY;
+			lastX = e.clientX;
+			lastY = e.clientY;
+
+			const cam = scene.camera;
+			if (typeof cam.rotate === 'function') {
+				e.preventDefault();
+				e.stopPropagation();
+				cam.rotate(-dx, -dy);
+			}
+		}) as EventListener, { capture: true });
+
+		window.addEventListener('pointerup', () => { dragging = false; });
 	}
 
 	function handleExportCsv() {

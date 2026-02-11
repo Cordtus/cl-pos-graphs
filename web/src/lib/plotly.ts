@@ -35,12 +35,24 @@ export function buildLayout(blockHeight?: string): Partial<Plotly.Layout> {
 		? `Liquidity Per Tick Range - Height ${blockHeight}`
 		: 'Liquidity Per Tick Range';
 
+	const axisStyle = {
+		gridcolor: '#2a2a3a',
+		zerolinecolor: '#2a2a3a',
+		showbackground: true,
+		backgroundcolor: '#0e0e16',
+	};
+
 	return {
 		title: { text: title },
 		scene: {
-			xaxis: { title: 'Lower Tick' },
-			yaxis: { title: 'Upper Tick' },
-			zaxis: { title: 'Liquidity Amount' },
+			aspectmode: 'cube' as const,
+			xaxis: { title: { text: 'Lower Tick', standoff: 10 }, ...axisStyle },
+			yaxis: { title: { text: 'Upper Tick', standoff: 10 }, ...axisStyle },
+			zaxis: { title: { text: 'Liquidity Amount', standoff: 10 }, ...axisStyle },
+			camera: {
+				eye: { x: 1.5, y: 1.5, z: 1.2 },
+				center: { x: 0, y: 0, z: -0.1 },
+			},
 		},
 		margin: { l: 0, r: 0, t: 40, b: 0 },
 		paper_bgcolor: '#0a0a0f',
