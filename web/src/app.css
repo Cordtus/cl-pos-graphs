@@ -1,0 +1,62 @@
+:root {
+	--bg-primary: #0a0a0f;
+	--bg-secondary: #12121a;
+	--bg-tertiary: #1a1a26;
+	--border: #2a2a3a;
+	--text-primary: #e0e0e8;
+	--text-secondary: #8888a0;
+	--accent: #7b68ee;
+	--accent-hover: #9585f0;
+	--danger: #e05555;
+	--success: #44cc88;
+	--font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+	--font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html, body {
+	height: 100%;
+	background: var(--bg-primary);
+	color: var(--text-primary);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+}
+
+button {
+	cursor: pointer;
+	font-family: inherit;
+	border: none;
+	border-radius: 6px;
+	font-size: 0.875rem;
+	padding: 0.5rem 1rem;
+	transition: background-color 0.15s, opacity 0.15s;
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+input[type="text"],
+input[type="number"] {
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	color: var(--text-primary);
+	font-family: var(--font-mono);
+	font-size: 0.875rem;
+	padding: 0.5rem 0.75rem;
+	outline: none;
+	transition: border-color 0.15s;
+}
+
+input:focus {
+	border-color: var(--accent);
+}
